@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect 4 - Fixed Version</title>
+    <title>Connect 4 - Mint & Red Fixed</title>
     <style>
         :root {
-            --board-blue: #2a66ff;
-            --slot-empty: #111827;
-            --p1-red: #ef4444;
-            --p2-yellow: #eab308;
+            --board-blue: #1e3a8a;
+            --slot-empty: #0f172a;
+            --p1-mint: #2dd4bf;
+            --p2-red: #ef4444;
         }
 
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #0f172a;
+            background-color: #0b0f19;
             color: #ffffff;
             margin: 0;
             display: flex;
@@ -22,12 +22,60 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         h1 {
-            margin: 0 0 10px 0;
+            margin: 0 0 5px 0;
             font-size: 2.5rem;
             text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #4b5563;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Menu Display */
+        #menu-overlay {
+            background-color: #111827;
+            border: 2px solid #1f2937;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .menu-btn {
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            background-color: #1f2937;
+            border: 2px solid #374151;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-bot:hover { border-color: var(--p1-mint); box-shadow: 0 0 15px rgba(45, 212, 191, 0.2); }
+        .btn-friend:hover { border-color: var(--p2-red); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+
+        /* Game Elements Workspace */
+        #game-workspace {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
         }
 
         #status-display {
@@ -36,19 +84,19 @@
             margin-bottom: 20px;
             padding: 10px 24px;
             border-radius: 9999px;
-            background-color: #1e293b;
-            border: 2px solid #334155;
+            background-color: #111827;
+            border: 2px solid #1f2937;
             transition: all 0.2s ease;
         }
 
-        .red-turn { color: var(--p1-red); border-color: var(--p1-red) !important; }
-        .yellow-turn { color: var(--p2-yellow); border-color: var(--p2-yellow) !important; }
+        .mint-turn { color: var(--p1-mint); border-color: var(--p1-mint) !important; }
+        .red-turn { color: var(--p2-red); border-color: var(--p2-red) !important; }
 
         #board-wrapper {
             background-color: var(--board-blue);
             padding: 16px;
             border-radius: 20px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
             width: 90vw;
             max-width: 480px;
         }
@@ -66,11 +114,11 @@
             aspect-ratio: 1 / 1;
             cursor: pointer;
             position: relative;
-            box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.6);
+            box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.8);
         }
 
         .cell:hover {
-            background-color: #1f2937;
+            background-color: #111827;
         }
 
         .token {
@@ -81,31 +129,36 @@
             animation: slideDown 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
 
+        .token.mint {
+            background: radial-gradient(circle at 35% 35%, #99f6e4, var(--p1-mint));
+            box-shadow: 0 4px 12px rgba(45, 212, 191, 0.4);
+        }
+
         .token.red {
-            background: radial-gradient(circle at 35% 35%, #f87171, var(--p1-red));
-            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+            background: radial-gradient(circle at 35% 35%, #f87171, var(--p2-red));
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
 
-        .token.yellow {
-            background: radial-gradient(circle at 35% 35%, #fde047, var(--p2-yellow));
-            box-shadow: 0 4px 10px rgba(234, 179, 8, 0.4);
-        }
-
-        #restart-button {
+        .controls-row {
+            display: flex;
+            gap: 15px;
             margin-top: 24px;
-            padding: 12px 32px;
+        }
+
+        .hud-btn {
+            padding: 12px 24px;
             font-size: 1rem;
             font-weight: 700;
             color: #ffffff;
-            background-color: #1e293b;
-            border: 2px solid #475569;
+            background-color: #111827;
+            border: 2px solid #1f2937;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.2s;
         }
 
-        #restart-button:hover {
-            background-color: #334155;
+        .hud-btn:hover {
+            background-color: #1f2937;
         }
 
         @keyframes slideDown {
@@ -117,33 +170,65 @@
 <body>
 
     <h1>Connect Four</h1>
-    <div id="status-display" class="red-turn">Player 1's Turn (Red)</div>
+    <div class="subtitle" id="mode-subtitle">Systems Menu</div>
     
-    <div id="board-wrapper">
-        <div id="grid"></div>
+    <!-- Main Menu Selection -->
+    <div id="menu-overlay">
+        <button class="menu-btn btn-bot" id="opt-bot">Singleplayer (vs Computer Bot)</button>
+        <button class="menu-btn btn-friend" id="opt-friend">Multiplayer (vs Local Friend)</button>
     </div>
 
-    <button id="restart-button">Restart Match</button>
+    <!-- Game Arena -->
+    <div id="game-workspace">
+        <div id="status-display" class="mint-turn">Player 1's Turn (Mint)</div>
+        
+        <div id="board-wrapper">
+            <div id="grid"></div>
+        </div>
+
+        <div class="controls-row">
+            <button id="restart-button" class="hud-btn">Reset Grid</button>
+            <button id="menu-button" class="hud-btn" style="border-color: #4b5563;">Main Menu</button>
+        </div>
+    </div>
 
     <script>
-        // Inline code runner ensures execution bypassing localized blockades
         (function() {
             const ROWS = 6;
             const COLS = 7;
+            let gameMode = "bot"; 
             let activePlayer = 1; 
-            let running = true;
+            let running = false;
+            let isBotThinking = false;
             let matrix = [];
 
+            const menuOverlay = document.getElementById('menu-overlay');
+            const workspace = document.getElementById('game-workspace');
+            const subtitle = document.getElementById('mode-subtitle');
             const grid = document.getElementById('grid');
             const status = document.getElementById('status-display');
-            const btn = document.getElementById('restart-button');
+            const restartBtn = document.getElementById('restart-button');
+            const menuBtn = document.getElementById('menu-button');
+
+            // Explicit Event Listeners to dodge scope issues
+            document.getElementById('opt-bot').addEventListener('click', function() { startGame('bot'); });
+            document.getElementById('opt-friend').addEventListener('click', function() { startGame('friend'); });
+
+            function startGame(mode) {
+                gameMode = mode;
+                menuOverlay.style.display = "none";
+                workspace.style.display = "flex";
+                subtitle.textContent = mode === "bot" ? "vs Computer Bot" : "vs Local Friend";
+                init();
+            }
 
             function init() {
                 grid.innerHTML = '';
                 running = true;
+                isBotThinking = false;
                 activePlayer = 1;
-                status.textContent = "Player 1's Turn (Red)";
-                status.className = "red-turn";
+                status.textContent = "Player 1's Turn (Mint)";
+                status.className = "mint-turn";
                 matrix = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
 
                 for (let r = 0; r < ROWS; r++) {
@@ -158,54 +243,83 @@
             }
 
             grid.addEventListener('click', function(e) {
-                if (!running) return;
+                if (!running || isBotThinking) return;
+                if (gameMode === "bot" && activePlayer === 2) return;
+
                 const cell = e.target.closest('.cell');
                 if (!cell) return;
 
                 const c = parseInt(cell.getAttribute('data-col'));
+                handleMove(c);
+            });
 
-                // Gravity: find lowest open slot in column
+            function handleMove(c) {
                 for (let r = ROWS - 1; r >= 0; r--) {
                     if (matrix[r][c] === 0) {
                         matrix[r][c] = activePlayer;
                         
-                        // Render Token
                         const targetIndex = (r * COLS) + c;
                         const targetCell = grid.children[targetIndex];
                         const token = document.createElement('div');
-                        token.className = `token ${activePlayer === 1 ? 'red' : 'yellow'}`;
+                        token.className = `token ${activePlayer === 1 ? 'mint' : 'red'}`;
                         targetCell.appendChild(token);
 
-                        // Check Outcomes
                         if (checkWin(r, c)) {
-                            status.textContent = `Player ${activePlayer === 1 ? '1 (Red)' : '2 (Yellow)'} Wins! 🎉`;
+                            status.textContent = gameMode === "bot" && activePlayer === 2 
+                                ? "Computer Bot Wins! 🤖" 
+                                : `Player ${activePlayer === 1 ? '1 (Mint)' : '2 (Red)'} Wins! 🎉`;
+                            status.className = activePlayer === 1 ? "mint-turn" : "red-turn";
                             running = false;
-                            return;
+                            return true;
                         }
 
                         if (matrix[0].every(val => val !== 0)) {
                             status.textContent = "It's a Tie! 🤝";
                             status.className = "";
                             running = false;
-                            return;
+                            return true;
                         }
 
-                        // Alternate Turn
+                        // Swap users
                         activePlayer = activePlayer === 1 ? 2 : 1;
-                        status.textContent = `Player ${activePlayer === 1 ? "1's Turn (Red)" : "2's Turn (Yellow)"}`;
-                        status.className = activePlayer === 1 ? "red-turn" : "yellow-turn";
-                        break;
+                        
+                        if (gameMode === "bot" && activePlayer === 2) {
+                            status.textContent = "Computer Bot is calculating...";
+                            status.className = "red-turn";
+                            isBotThinking = true;
+                            setTimeout(triggerBotLogic, 600);
+                        } else {
+                            status.textContent = `Player ${activePlayer === 1 ? "1's Turn (Mint)" : "2's Turn (Red)"}`;
+                            status.className = activePlayer === 1 ? "mint-turn" : "red-turn";
+                        }
+                        return true;
                     }
                 }
-            });
+                return false; // Column is full
+            }
+
+            function triggerBotLogic() {
+                if (!running) return;
+
+                let validCols = [];
+                for (let c = 0; c < COLS; c++) {
+                    if (matrix[0][c] === 0) validCols.push(c);
+                }
+
+                if (validCols.length > 0) {
+                    const chosenCol = validCols[Math.floor(Math.random() * validCols.length)];
+                    isBotThinking = false;
+                    handleMove(chosenCol);
+                }
+            }
 
             function checkWin(r, c) {
                 const p = matrix[r][c];
                 const vectors = [
-                    [[0, 1], [0, -1]],
-                    [[1, 0], [-1, 0]],
-                    [[1, 1], [-1, -1]],
-                    [[1, -1], [-1, 1]]
+                    [[0, 1], [0, -1]],   
+                    [[1, 0], [-1, 0]],   
+                    [[1, 1], [-1, -1]],  
+                    [[1, -1], [-1, 1]]   
                 ];
 
                 for (let v of vectors) {
@@ -224,8 +338,14 @@
                 return false;
             }
 
-            btn.addEventListener('click', init);
-            window.onload = init;
+            restartBtn.addEventListener('click', init);
+            
+            menuBtn.addEventListener('click', function() {
+                workspace.style.display = "none";
+                menuOverlay.style.display = "block";
+                subtitle.textContent = "Systems Menu";
+                running = false;
+            });
         })();
     </script>
 </body>
