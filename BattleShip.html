@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BATTLESHIP // COMBAT MATRIX</title>
+    <title>BATTLESHIP X</title>
     <style>
         :root {
             --bg-dark: #070b12;
@@ -378,7 +378,7 @@
             rotateBtn.textContent = "Orientation: HORIZONTAL";
 
             document.getElementById('game-mode-subtitle').textContent = 
-                gameMode === 'bot' ? "Cybernetic Combat Engine Active" : "Local Direct Dual-Grid Link";
+                gameMode === 'bot' ? "Cybernetic Combat Engine Active" : "Bereit der Bessere zu sein?";
             
             document.getElementById('radar-badge').textContent = "[LOCKED]";
             document.getElementById('radar-badge').style.color = "var(--p2-red)";
@@ -390,7 +390,7 @@
             }
 
             renderGrids();
-            printTerminal("🟢 EMERALD COMMAND (P1): Place your Capital Flagship (Size: " + FLEET_BLUEPRINTS[0] + ") on your lower grid map.");
+            printTerminal("🟢 EMERALD COMMAND (P1): Place your Flagship (Size: " + FLEET_BLUEPRINTS[0] + ") on your lower grid map.");
         }
 
         function renderGrids() {
