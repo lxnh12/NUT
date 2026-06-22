@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATTLESHIP // COMBAT MATRIX</title>
+    <style>
+        :root {
+            --bg-dark: #070b12;
+            --panel-hud: #0e1726;
+            --p1-green: #10b981;
+            --p1-green-glow: rgba(16, 185, 129, 0.4);
+            --p2-red: #ef4444;
+            --p2-red-glow: rgba(239, 68, 68, 0.4);
+            --neon-blue: #0ea5e9;
+            --neon-orange: #f59e0b;
+            --grid-water: #132237;
+            --hull-gray: #4b5563;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-align: center;
+            background: linear-gradient(90deg, var(--p1-green), var(--p2-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-top: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Menu Overlay Styling */
+        #menu-overlay {
+            background-color: var(--panel-hud);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+            max-width: 420px;
+            width: 90%;
+            margin-top: 40px;
+        }
+
+        .menu-title {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        #game-workspace {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        #console-log {
+            width: 95vw;
+            max-width: 740px;
+            background-color: #020617;
+            border-left: 4px solid var(--neon-blue);
+            padding: 14px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            font-family: monospace;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.6);
+            box-sizing: border-box;
+        }
+
+        .controls-panel {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hud-btn {
+            background-color: #1e293b;
+            color: #f1f5f9;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .hud-btn:hover {
+            background-color: #334155;
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .menu-btn {
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            padding: 14px;
+            background-color: #111827;
+        }
+        .menu-btn.btn-bot:hover { border-color: var(--p1-green); color: var(--p1-green); box-shadow: 0 0 15px var(--p1-green-glow); }
+        .menu-btn.btn-friend:hover { border-color: var(--p2-red); color: var(--p2-red); box-shadow: 0 0 15px var(--p2-red-glow); }
+
+        #rotate-btn { border-color: var(--neon-orange); color: var(--neon-orange); }
+        #rotate-btn:hover { background-color: var(--neon-orange); color: #000; }
+
+        #action-btn { border-color: #fff; color: #fff; display: none; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+
+        #sys-reboot-btn { border-color: #475569; color: #94a3b8; }
+
+        .layout-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+            width: 100%;
+        }
+
+        @media (min-width: 800px) {
+            .layout-wrapper {
+                flex-direction: row;
+                justify-content: center;
+                align-items: flex-start;
+            }
+        }
+
+        .hud-module {
+            background-color: var(--panel-hud);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+            position: relative;
+        }
+
+        .module-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .vector-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 3px;
+            width: 85vw;
+            max-width: 330px;
+            aspect-ratio: 1/1;
+            position: relative;
+            background-color: #0b111e;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .node-cell {
+            background-color: var(--grid-water);
+            border: none;
+            border-radius: 3px;
+            aspect-ratio: 1/1;
+            padding: 0;
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.1s;
+        }
+
+        .node-cell:hover {
+            background-color: #1e3a8a;
+        }
+
+        /* Dynamic Ship Rendering Classes */
+        /* Player 1 - Green Ships */
+        .p1-ship-mid { background-color: #065f46; border: 2px solid var(--p1-green); }
+        .p1-ship-horiz-bow { background-color: #065f46; border: 2px solid var(--p1-green); border-radius: 15px 0 0 15px; }
+        .p1-ship-horiz-stern { background-color: #065f46; border: 2px solid var(--p1-green); border-radius: 0 8px 8px 0; }
+        .p1-ship-vert-bow { background-color: #065f46; border: 2px solid var(--p1-green); border-radius: 15px 15px 0 0; }
+        .p1-ship-vert-stern { background-color: #065f46; border: 2px solid var(--p1-green); border-radius: 0 0 8px 8px; }
+
+        /* Player 2 / Bot - Red Ships */
+        .p2-ship-mid { background-color: #991b1b; border: 2px solid var(--p2-red); }
+        .p2-ship-horiz-bow { background-color: #991b1b; border: 2px solid var(--p2-red); border-radius: 15px 0 0 15px; }
+        .p2-ship-horiz-stern { background-color: #991b1b; border: 2px solid var(--p2-red); border-radius: 0 8px 8px 0; }
+        .p2-ship-vert-bow { background-color: #991b1b; border: 2px solid var(--p2-red); border-radius: 15px 15px 0 0; }
+        .p2-ship-vert-stern { background-color: #991b1b; border: 2px solid var(--p2-red); border-radius: 0 0 8px 8px; }
+
+        /* Hit & Miss Styling overrides */
+        .node-hit {
+            background-color: #7f1d1d !important;
+            border: 2px solid var(--p2-red) !important;
+            box-shadow: inset 0 0 8px #ef4444;
+        }
+        .node-hit::after {
+            content: "💥";
+            position: absolute;
+            font-size: 0.9rem;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .node-miss {
+            background-color: #334155 !important;
+            border: none !important;
+        }
+        .node-miss::after {
+            content: "";
+            position: absolute;
+            width: 25%; height: 25%;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Turn Change / Privacy Blocks */
+        .blind-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #0f172a;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-weight: bold;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            letter-spacing: 1px;
+            z-index: 50;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px dashed #334155;
+        }
+
+        .hide-radar #enemy-radar-module { opacity: 0.25; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="hud-header">
+        <h1>NAVAL WARFARE</h1>
+        <div class="subtitle" id="game-mode-subtitle">Command Array Offline</div>
+    </div>
+
+    <!-- Main Selection Menu -->
+    <div id="menu-overlay">
+        <div class="menu-title">Choose Engagement Profile</div>
+        <button class="hud-btn menu-btn btn-bot" onclick="initiateGameEngine('bot')">Play Against Cyber Bot (AI)</button>
+        <button class="hud-btn menu-btn btn-friend" onclick="initiateGameEngine('friend')">Play Against Local Friend</button>
+    </div>
+
+    <!-- Active Workspace Arena -->
+    <div id="game-workspace">
+        <div id="console-log">
+            <span id="log-text">Initializing operational map grid...</span>
+        </div>
+
+        <div class="controls-panel">
+            <button id="rotate-btn" class="hud-btn">Orientation: HORIZONTAL</button>
+            <button id="action-btn" class="hud-btn">Confirm Fleet Exchange</button>
+            <button id="sys-reboot-btn" class="hud-btn">Abandon Match</button>
+        </div>
+
+        <div class="layout-wrapper">
+            <!-- Target Weapon Radar -->
+            <div class="hud-module" id="enemy-radar-module">
+                <div class="module-label">
+                    <span>Targeting Radar Scope</span>
+                    <span id="radar-badge" style="color: var(--p2-red)">[OFFLINE]</span>
+                </div>
+                <div id="enemy-radar-vector" class="vector-grid">
+                    <div class="blind-screen" id="radar-blind">TACTICAL COMPARTMENT LOCKED // CHANGE OF OPERATIONS</div>
+                </div>
+            </div>
+
+            <!-- Defensive Home Harbor Grid -->
+            <div class="hud-module" id="player-fleet-module">
+                <div class="module-label">
+                    <span>Defensive Fleet Harbor</span>
+                    <span id="fleet-badge" style="color: var(--neon-orange)">[DEPLOY SECTOR]</span>
+                </div>
+                <div id="player-fleet-vector" class="vector-grid">
+                    <div class="blind-screen" id="fleet-blind">TACTICAL COMPARTMENT LOCKED // CHANGE OF OPERATIONS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DIM = 10;
+        const FLEET_BLUEPRINTS = [5, 4, 4, 3, 2];
+        const WIN_COUNT = FLEET_BLUEPRINTS.reduce((a, b) => a + b, 0); 
+
+        let gameMode = "bot"; 
+        let p1Board = []; // Stores objects: { hasShip: 0/1, type: 'bow'/'mid'/'stern', dir: 'h'/'v', owner: 1/2, status: 0=open, 2=hit, 3=miss }
+        let p2Board = []; 
+        let p1Hits = 0;
+        let p2Hits = 0;
+
+        let activePlayer = 1; 
+        let currentPhase = "setup-p1"; 
+        let currentShipIdx = 0;
+        let isHorizontal = true;
+
+        const menuOverlay = document.getElementById('menu-overlay');
+        const workspace = document.getElementById('game-workspace');
+        const radarEl = document.getElementById('enemy-radar-vector');
+        const fleetEl = document.getElementById('player-fleet-vector');
+        const terminal = document.getElementById('log-text');
+        
+        const rotateBtn = document.getElementById('rotate-btn');
+        const actionBtn = document.getElementById('action-btn');
+        const rebootBtn = document.getElementById('sys-reboot-btn');
+        const radarBlind = document.getElementById('radar-blind');
+        const fleetBlind = document.getElementById('fleet-blind');
+
+        function createBlankBoard() {
+            return Array(DIM).fill(null).map(() => Array(DIM).fill(null).map(() => ({
+                hasShip: 0,
+                type: 'mid',
+                dir: 'h',
+                status: 0
+            })));
+        }
+
+        function initiateGameEngine(selectedMode) {
+            gameMode = selectedMode;
+            menuOverlay.style.display = "none";
+            workspace.style.display = "flex";
+
+            p1Board = createBlankBoard();
+            p2Board = createBlankBoard();
+            p1Hits = 0;
+            p2Hits = 0;
+            activePlayer = 1;
+            currentPhase = "setup-p1";
+            currentShipIdx = 0;
+            isHorizontal = true;
+
+            document.body.className = "phase-setup hide-radar";
+            radarBlind.style.display = "none";
+            fleetBlind.style.display = "none";
+            actionBtn.style.display = "none";
+            rotateBtn.style.display = "inline-block";
+            rotateBtn.textContent = "Orientation: HORIZONTAL";
+
+            document.getElementById('game-mode-subtitle').textContent = 
+                gameMode === 'bot' ? "Cybernetic Combat Engine Active" : "Local Direct Dual-Grid Link";
+            
+            document.getElementById('radar-badge').textContent = "[LOCKED]";
+            document.getElementById('radar-badge').style.color = "var(--p2-red)";
+            document.getElementById('fleet-badge').textContent = "[GREEN DEPLOYMENT]";
+            document.getElementById('fleet-badge').style.color = "var(--p1-green)";
+
+            if (gameMode === 'bot') {
+                generateBotFleetRandomly();
+            }
+
+            renderGrids();
+            printTerminal("🟢 EMERALD COMMAND (P1): Place your Capital Flagship (Size: " + FLEET_BLUEPRINTS[0] + ") on your lower grid map.");
+        }
+
+        function renderGrids() {
+            radarEl.innerHTML = '';
+            fleetEl.innerHTML = '';
+            radarEl.appendChild(radarBlind);
+            fleetEl.appendChild(fleetBlind);
+
+            for (let r = 0; r < DIM; r++) {
+                for (let c = 0; c < DIM; c++) {
+                    const fNode = document.createElement('button');
+                    fNode.className = 'node-cell';
+                    fNode.onclick = () => handleCellClick('fleet', r, c);
+                    applyNodeVisuals('fleet', fNode, r, c);
+                    fleetEl.appendChild(fNode);
+
+                    const rNode = document.createElement('button');
+                    rNode.className = 'node-cell';
+                    rNode.onclick = () => handleCellClick('radar', r, c);
+                    applyNodeVisuals('radar', rNode, r, c);
+                    radarEl.appendChild(rNode);
+                }
+            }
+        }
+
+        function applyNodeVisuals(gridType, node, r, c) {
+            const currentActiveBoard = currentPhase === "setup-p1" ? p1Board : p2Board;
+            
+            if (currentPhase === "setup-p1" || currentPhase === "setup-p2") {
+                if (gridType === 'fleet') {
+                    const cellData = currentActiveBoard[r][c];
+                    if (cellData.hasShip === 1) {
+                        const ownerStr = (currentPhase === "setup-p1") ? "p1" : "p2";
+                        node.classList.add(`${ownerStr}-ship-${cellData.dir}-${cellData.type}`);
+                    }
+                }
+            } else if (currentPhase === "combat") {
+                const myBoard = activePlayer === 1 ? p1Board : p2Board;
+                const enemyBoard = activePlayer === 1 ? p2Board : p1Board;
+
+                if (gridType === 'fleet') {
+                    const cellData = myBoard[r][c];
+                    const ownerStr = (activePlayer === 1) ? "p1" : "p2";
+                    
+                    if (cellData.hasShip === 1) {
+                        node.classList.add(`${ownerStr}-ship-${cellData.dir}-${cellData.type}`);
+                    }
+                    if (cellData.status === 2) node.classList.add('node-hit');
+                    if (cellData.status === 3) node.classList.add('node-miss');
+                } else if (gridType === 'radar') {
+                    const cellData = enemyBoard[r][c];
+                    if (cellData.status === 2) node.classList.add('node-hit');
+                    if (cellData.status === 3) node.classList.add('node-miss');
+                }
+            }
+        }
+
+        function handleCellClick(gridType, r, c) {
+            if (currentPhase === "setup-p1" || currentPhase === "setup-p2") {
+                if (gridType !== 'fleet') return;
+                processPlacement(r, c);
+            } else if (currentPhase === "combat") {
+                if (gridType !== 'radar') return;
+                processAttack(r, c);
+            }
+        }
+
+        function processPlacement(r, c) {
+            const size = FLEET_BLUEPRINTS[currentShipIdx];
+            const board = currentPhase === "setup-p1" ? p1Board : p2Board;
+
+            if (isHorizontal && (c + size > DIM)) return printTerminal("⚠️ PLACEMENT ABORTED: Ship extends beyond right grid barrier.");
+            if (!isHorizontal && (r + size > DIM)) return printTerminal("⚠️ PLACEMENT ABORTED: Ship extends beyond lower grid barrier.");
+
+            for (let i = 0; i < size; i++) {
+                if (board[isHorizontal ? r : r + i][isHorizontal ? c + i : c].hasShip === 1) {
+                    return printTerminal("⚠️ PLACEMENT ABORTED: Grid crash. Space already claimed by another vessel.");
+                }
+            }
+
+            for (let i = 0; i < size; i++) {
+                let segmentType = 'mid';
+                if (i === 0) segmentType = 'bow';
+                else if (i === size - 1) segmentType = 'stern';
+
+                const targetCell = board[isHorizontal ? r : r + i][isHorizontal ? c + i : c];
+                targetCell.hasShip = 1;
+                targetCell.type = segmentType;
+                targetCell.dir = isHorizontal ? 'horiz' : 'vert';
+            }
+
+            currentShipIdx++;
+            renderGrids();
+
+            if (currentShipIdx < FLEET_BLUEPRINTS.length) {
+                printTerminal("Vessel deployed. Program hull footprint for next ship (Size: " + FLEET_BLUEPRINTS[currentShipIdx] + " units).");
+            } else {
+                if (gameMode === 'bot') {
+                    currentPhase = "combat";
+                    document.body.className = "phase-battle";
+                    rotateBtn.style.display = "none";
+                    document.getElementById('radar-badge').textContent = "[SCANNING]";
+                    document.getElementById('radar-badge').style.color = "var(--p2-red)";
+                    document.getElementById('fleet-badge').textContent = "[YOUR SHIPS]";
+                    document.getElementById('fleet-badge').style.color = "var(--p1-green)";
+                    printTerminal("⚔️ ENGAGEMENT START: Link with Cyber Bot established. Fire upon the Target Radar Scope above!");
+                } else {
+                    currentPhase = "transition";
+                    rotateBtn.style.display = "none";
+                    fleetBlind.style.display = "flex";
+                    actionBtn.style.display = "inline-block";
+
+                    if (activePlayer === 1) {
+                        activePlayer = 2;
+                        currentShipIdx = 0;
+                        printTerminal("Emerald Fleet locked. HAND HARDWARE TO PLAYER 2. Shield layout perspective and select 'Confirm Fleet Exchange'.");
+                    } else {
+                        activePlayer = 1;
+                        radarBlind.style.display = "flex";
+                        printTerminal("Crimson Fleet locked. HAND HARDWARE BACK TO PLAYER 1. Secure view window and select 'Confirm Fleet Exchange' to open fire.");
+                    }
+                }
+            }
+        }
+
+        function generateBotFleetRandomly() {
+            FLEET_BLUEPRINTS.forEach((hullLength) => {
+                let deployed = false;
+                while (!deployed) {
+                    const horiz = Math.random() < 0.5;
+                    const r = Math.floor(Math.random() * (horiz ? DIM : DIM - hullLength + 1));
+                    const c = Math.floor(Math.random() * (horiz ? DIM - hullLength + 1 : DIM));
+
+                    let overlap = false;
+                    for (let i = 0; i < hullLength; i++) {
+                        if (p2Board[horiz ? r : r + i][horiz ? c + i : c].hasShip === 1) { overlap = true; break; }
+                    }
+
+                    if (!overlap) {
+                        for (let i = 0; i < hullLength; i++) {
+                            let segmentType = 'mid';
+                            if (i === 0) segmentType = 'bow';
+                            else if (i === hullLength - 1) segmentType = 'stern';
+
+                            const targetCell = p2Board[horiz ? r : r + i][horiz ? c + i : c];
+                            targetCell.hasShip = 1;
+                            targetCell.type = segmentType;
+                            targetCell.dir = horiz ? 'horiz' : 'vert';
+                        }
+                        deployed = true;
+                    }
+                }
+            });
+        }
+
+        function processAttack(r, c) {
+            const enemyBoard = activePlayer === 1 ? p2Board : p1Board;
+            if (enemyBoard[r][c].status === 2 || enemyBoard[r][c].status === 3) return; 
+
+            if (enemyBoard[r][c].hasShip === 1) {
+                enemyBoard[r][c].status = 2; 
+                if (activePlayer === 1) p1Hits++; else p2Hits++;
+                renderGrids();
+
+                if (p1Hits === WIN_COUNT) {
+                    printTerminal("🏆 VICTOR DECLARED: GREEN COMMAND (PLAYER 1) COMPLETELY ANNIHILATED THE CRIMSON FLEET!");
+                    currentPhase = "game-over";
+                    return;
+                } else if (p2Hits === WIN_COUNT) {
+                    printTerminal("🏆 VICTOR DECLARED: RED COMMAND (PLAYER 2) COMPLETELY ANNIHILATED THE EMERALD FLEET!");
+                    currentPhase = "game-over";
+                    return;
+                }
+                printTerminal("💥 IMPACT REGISTERED! Critical hull damage dealt. Arming extra payload ammunition!");
+            } else {
+                enemyBoard[r][c].status = 3; 
+                renderGrids();
+                printTerminal("💧 SPLASH. Torpedo missed target coordinates.");
+
+                if (gameMode === 'bot') {
+                    currentPhase = "transition"; 
+                    setTimeout(processBotAttackTurn, 900);
+                } else {
+                    currentPhase = "transition";
+                    activePlayer = activePlayer === 1 ? 2 : 1;
+                    setTimeout(() => {
+                        radarBlind.style.display = "flex";
+                        fleetBlind.style.display = "flex";
+                        actionBtn.style.display = "inline-block";
+                        printTerminal("Fire missed. TRANSFER COMMAND INTERFACE TO PLAYER " + activePlayer + ". Tap 'Confirm Fleet Exchange' when screen is secure.");
+                    }, 1200);
+                }
+            }
+        }
+
+        function processBotAttackTurn() {
+            let searching = true;
+            while (searching) {
+                const tr = Math.floor(Math.random() * DIM);
+                const tc = Math.floor(Math.random() * DIM);
+
+                if (p1Board[tr][tc].status !== 2 && p1Board[tr][tc].status !== 3) {
+                    searching = false;
+
+                    if (p1Board[tr][tc].hasShip === 1) {
+                        p1Board[tr][tc].status = 2; 
+                        p2Hits++;
+                        renderGrids();
+
+                        if (p2Hits === WIN_COUNT) {
+                            printTerminal("💀 DEFEAT: Cyber Bot pierced your hull infrastructure. Systems offline.");
+                            currentPhase = "game-over";
+                        } else {
+                            printTerminal("⚠️ DETONATION FLASH: Cyber Bot scored a direct hit to your green grid! Hostile reloading...");
+                            setTimeout(processBotAttackTurn, 900);
+                        }
+                    } else {
+                        p1Board[tr][tc].status = 3; 
+                        renderGrids();
+                        printTerminal("Cyber Bot torpedo missed your lines completely. Battery reserves online, return fire!");
+                        currentPhase = "combat";
+                    }
+                }
+            }
+        }
+
+        function handleActionButton() {
+            actionBtn.style.display = "none";
+            
+            if (currentPhase === "transition") {
+                if (p1Hits === 0 && p2Hits === 0 && gameMode === 'friend' && p2Board.flat().reduce((acc, cell) => acc + cell.hasShip, 0) === 0) {
+                    currentPhase = "setup-p2";
+                    document.body.className = "phase-setup hide-radar";
+                    fleetBlind.style.display = "none";
+                    rotateBtn.style.display = "inline-block";
+                    document.getElementById('fleet-badge').textContent = "[RED DEPLOYMENT]";
+                    document.getElementById('fleet-badge').style.color = "var(--p2-red)";
+                    printTerminal("🔴 CRIMSON COMMAND (P2): Program your Capital Flagship (Size: " + FLEET_BLUEPRINTS[0] + ") into your defensive harbor map.");
+                } else {
+                    currentPhase = "combat";
+                    document.body.className = "phase-battle";
+                    radarBlind.style.display = "none";
+                    fleetBlind.style.display = "none";
+                    
+                    if (activePlayer === 1) {
+                        document.getElementById('radar-badge').textContent = "[GREEN ATTACK]";
+                        document.getElementById('radar-badge').style.color = "var(--p1-green)";
+                        document.getElementById('fleet-badge').textContent = "[GREEN HARBOR]";
+                        document.getElementById('fleet-badge').style.color = "var(--p1-green)";
+                        printTerminal("🟢 EMERALD COMMAND (P1): Target lock enabled. Launch fire at a square on your upper radar scope.");
+                    } else {
+                        document.getElementById('radar-badge').textContent = "[RED ATTACK]";
+                        document.getElementById('radar-badge').style.color = "var(--p2-red)";
+                        document.getElementById('fleet-badge').textContent = "[RED HARBOR]";
+                        document.getElementById('fleet-badge').style.color = "var(--p2-red)";
+                        printTerminal("🔴 CRIMSON COMMAND (P2): Target lock enabled. Launch fire at a square on your upper radar scope.");
+                    }
+                }
+                renderGrids();
+            }
+        }
+
+        function printTerminal(msg) {
+            terminal.textContent = msg;
+        }
+
+        rotateBtn.onclick = () => {
+            isHorizontal = !isHorizontal;
+            rotateBtn.textContent = isHorizontal ? "Orientation: HORIZONTAL" : "Orientation: VERTICAL";
+        };
+
+        actionBtn.onclick = handleActionButton;
+        
+        rebootBtn.onclick = () => {
+            workspace.style.display = "none";
+            menuOverlay.style.display = "block";
+            document.getElementById('game-mode-subtitle').textContent = "Command Array Offline";
+        };
+    </script>
+</body>
+</html>
